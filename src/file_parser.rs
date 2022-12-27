@@ -1,11 +1,9 @@
-use std::{collections::HashMap, error::Error, fs::File, io::BufReader, path::Path};
+use std::{error::Error, fs::File, io::BufReader, path::Path};
 
 use diesel::{prelude::*, upsert::excluded, SqliteConnection};
 use log::debug;
 
-use crate::schema::{
-    instantiate_class, instantiate_function, objects, parse_class, parse_template, source,
-};
+use crate::schema::{instantiate_class, instantiate_function, parse_class, parse_template, source};
 use crate::{
     trace_event::{TraceEvent, TraceEvents},
     tracedb::{
@@ -32,18 +30,21 @@ fn get_duration(trace_event: &TraceEvent) -> i32 {
 }
 
 macro_rules! insert_records {
-    ($table:ident, $key:ident, $vec:expr, $conn:expr) => {
-        for __record in $vec.iter() {
-            diesel::insert_into($table::table)
-                .values(__record)
-                .on_conflict($table::$key)
-                .do_update()
-                .set((
-                    $table::count.eq($table::count + excluded($table::count)),
-                    $table::duration.eq($table::duration + excluded($table::duration)),
-                ))
-                .execute($conn)?;
-        }
+    ($table:ident, $key:ident, $vec:expr, $conn:ident) => {
+        $conn.transaction::<_, Box<dyn Error + 'static>, _>(|$conn| {
+            for __record in $vec.iter() {
+                diesel::insert_into($table::table)
+                    .values(__record)
+                    .on_conflict($table::$key)
+                    .do_update()
+                    .set((
+                        $table::count.eq($table::count + excluded($table::count)),
+                        $table::duration.eq($table::duration + excluded($table::duration)),
+                    ))
+                    .execute($conn)?;
+            }
+            Ok(())
+        })?;
     };
 }
 
