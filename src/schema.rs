@@ -1,18 +1,16 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    instantiate_class (name, object) {
+    instantiate_class (name) {
         name -> Text,
-        object -> Text,
         duration -> Integer,
         count -> Integer,
     }
 }
 
 diesel::table! {
-    instantiate_function (name, object) {
+    instantiate_function (name) {
         name -> Text,
-        object -> Text,
         duration -> Integer,
         count -> Integer,
     }
@@ -28,27 +26,24 @@ diesel::table! {
 }
 
 diesel::table! {
-    parse_class (name, object) {
+    parse_class (name) {
         name -> Text,
-        object -> Text,
         duration -> Integer,
         count -> Integer,
     }
 }
 
 diesel::table! {
-    parse_template (name, object) {
+    parse_template (name) {
         name -> Text,
-        object -> Text,
         duration -> Integer,
         count -> Integer,
     }
 }
 
 diesel::table! {
-    source (path, object) {
+    source (path) {
         path -> Text,
-        object -> Text,
         duration -> Integer,
         count -> Integer,
     }

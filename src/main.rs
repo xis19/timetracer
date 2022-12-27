@@ -1,8 +1,10 @@
 extern crate argparse;
 extern crate env_logger;
+extern crate libsqlite3_sys;
 extern crate timetracer;
 
 use argparse::{ArgumentParser, Store};
+use diesel::RunQueryDsl;
 use log::{debug, warn};
 use timetracer::file_parser::json_parser;
 
@@ -28,8 +30,9 @@ fn main() {
     debug!("Work directory: {}", work_directory_string);
 
     let database = PathBuf::from(&work_directory_string).join("tracedb.sqlite");
-    let mut connection =
-        timetracer::tracedb::get_connection(database.to_str().unwrap().to_string()).unwrap();
+    let mut connection = timetracer::tracedb::get_connection(database.to_str().unwrap()).unwrap();
+
+    diesel::sql_query("PRAGMA journal_mode=WAL;").execute(&mut connection).unwrap();
 
     for path_result in iterate_json_files(&PathBuf::from(&work_directory_string)).unwrap() {
         match path_result {

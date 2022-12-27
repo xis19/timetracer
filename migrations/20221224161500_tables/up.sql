@@ -6,41 +6,31 @@ CREATE TABLE objects (
 );
 
 CREATE TABLE source (
-    path TEXT NOT NULL,
-    object TEXT NOT NULL,
+    path TEXT NOT NULL PRIMARY KEY,
     duration INTEGER NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (path, object)
+    count INTEGER NOT NULL
 );
 
 CREATE TABLE parse_class (
-    name TEXT NOT NULL,
-    object TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     duration INTEGER NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (name, object)
+    count INTEGER NOT NULL
 );
 
 CREATE TABLE parse_template (
-    name TEXT NOT NULL,
-    object TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     duration INTEGER NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (name, object)
+    count INTEGER NOT NULL
 );
 
 CREATE TABLE instantiate_class (
-    name TEXT NOT NULL,
-    object TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     duration INTEGER NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (name, object)
+    count INTEGER NOT NULL
 );
 
 CREATE TABLE instantiate_function(
-    name TEXT NOT NULL,
-    object TEXT NOT NULL,
+    name TEXT NOT NULL PRIMARY KEY,
     duration INTEGER NOT NULL,
-    count INTEGER NOT NULL,
-    PRIMARY KEY (name, object)
+    count INTEGER NOT NULL
 );

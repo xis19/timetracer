@@ -25,9 +25,9 @@ fn run_migrations(
 }
 
 pub fn get_connection(
-    target: String,
+    target: &str,
 ) -> Result<SqliteConnection, Box<dyn Error + Send + Sync + 'static>> {
-    let mut connection = SqliteConnection::establish(&target)?;
+    let mut connection = SqliteConnection::establish(target)?;
     run_migrations(&mut connection)?;
 
     // At this stage, we delete all tables
@@ -40,8 +40,6 @@ pub fn get_connection(
 
     Ok(connection)
 }
-
-// FIXME use proc macro to simply the code
 
 #[derive(Queryable)]
 #[diesel(table_name = objects)]
@@ -80,11 +78,14 @@ impl<'a> NewObject<'a> {
     }
 }
 
+pub trait InsertTrait {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>>;
+}
+
 #[derive(Queryable)]
 #[diesel(table_name = source)]
 pub struct Sources {
     pub path: String,
-    pub object: String,
     pub duration: i32,
     pub count: i32,
 }
@@ -93,28 +94,31 @@ pub struct Sources {
 #[diesel(table_name = source)]
 pub struct NewSource<'a> {
     pub path: &'a str,
-    pub object: &'a str,
     pub duration: i32,
     pub count: i32,
 }
 
 impl<'a> NewSource<'a> {
-    pub fn new(path: &'a str, object: &'a str, duration: i32) -> Self {
+    pub fn new(path: &'a str, duration: i32) -> Self {
         NewSource {
             path,
-            object,
             duration,
             count: 1,
         }
     }
+}
 
-    pub fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
-        use source::{count, duration, object, path};
+impl<'a> InsertTrait for NewSource<'a> {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
+        use source::{count, duration, path};
         let _ = diesel::insert_into(source::table)
             .values(self)
-            .on_conflict((path, object))
+            .on_conflict(path)
             .do_update()
-            .set((count.eq(count + 1), duration.eq(duration + self.duration)))
+            .set((
+                count.eq(count + self.count),
+                duration.eq(duration + self.duration),
+            ))
             .execute(conn)?;
         Ok(())
     }
@@ -124,7 +128,6 @@ impl<'a> NewSource<'a> {
 #[diesel(table_name = parse_class)]
 pub struct ParseClass {
     pub name: String,
-    pub object: String,
     pub duration: i32,
     pub count: i32,
 }
@@ -133,28 +136,31 @@ pub struct ParseClass {
 #[diesel(table_name = parse_class)]
 pub struct NewParseClass<'a> {
     pub name: &'a str,
-    pub object: &'a str,
     pub duration: i32,
     pub count: i32,
 }
 
 impl<'a> NewParseClass<'a> {
-    pub fn new(name: &'a str, object: &'a str, duration: i32) -> Self {
+    pub fn new(name: &'a str, duration: i32) -> Self {
         NewParseClass {
             name,
-            object,
             duration,
             count: 1,
         }
     }
+}
 
-    pub fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
-        use parse_class::{count, duration, name, object};
+impl<'a> InsertTrait for NewParseClass<'a> {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
+        use parse_class::{count, duration, name};
         let _ = diesel::insert_into(parse_class::table)
             .values(self)
-            .on_conflict((name, object))
+            .on_conflict(name)
             .do_update()
-            .set((count.eq(count + 1), duration.eq(duration + self.duration)))
+            .set((
+                count.eq(count + self.count),
+                duration.eq(duration + self.duration),
+            ))
             .execute(conn)?;
         Ok(())
     }
@@ -164,7 +170,6 @@ impl<'a> NewParseClass<'a> {
 #[diesel(table_name = parse_template)]
 pub struct ParseTemplate {
     pub name: String,
-    pub object: String,
     pub duration: i32,
     pub count: i32,
 }
@@ -173,28 +178,31 @@ pub struct ParseTemplate {
 #[diesel(table_name = parse_template)]
 pub struct NewParseTemplate<'a> {
     pub name: &'a str,
-    pub object: &'a str,
     pub duration: i32,
     pub count: i32,
 }
 
 impl<'a> NewParseTemplate<'a> {
-    pub fn new(name: &'a str, object: &'a str, duration: i32) -> Self {
+    pub fn new(name: &'a str, duration: i32) -> Self {
         NewParseTemplate {
             name,
-            object,
             duration,
             count: 1,
         }
     }
+}
 
-    pub fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
-        use parse_template::{count, duration, name, object};
+impl<'a> InsertTrait for NewParseTemplate<'a> {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
+        use parse_template::{count, duration, name};
         let _ = diesel::insert_into(parse_template::table)
             .values(self)
-            .on_conflict((name, object))
+            .on_conflict(name)
             .do_update()
-            .set((count.eq(count + 1), duration.eq(duration + self.duration)))
+            .set((
+                count.eq(count + self.count),
+                duration.eq(duration + self.duration),
+            ))
             .execute(conn)?;
         Ok(())
     }
@@ -204,7 +212,6 @@ impl<'a> NewParseTemplate<'a> {
 #[diesel(table_name = instantiate_class)]
 pub struct InstantiateClass {
     pub name: String,
-    pub object: String,
     pub duration: i32,
     pub count: i32,
 }
@@ -213,28 +220,31 @@ pub struct InstantiateClass {
 #[diesel(table_name = instantiate_class)]
 pub struct NewInstantiateClass<'a> {
     pub name: &'a str,
-    pub object: &'a str,
     pub duration: i32,
     pub count: i32,
 }
 
 impl<'a> NewInstantiateClass<'a> {
-    pub fn new(name: &'a str, object: &'a str, duration: i32) -> Self {
+    pub fn new(name: &'a str, duration: i32) -> Self {
         NewInstantiateClass {
             name,
-            object,
             duration,
             count: 1,
         }
     }
+}
 
-    pub fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
-        use instantiate_class::{count, duration, name, object};
+impl<'a> InsertTrait for NewInstantiateClass<'a> {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
+        use instantiate_class::{count, duration, name};
         let _ = diesel::insert_into(instantiate_class::table)
             .values(self)
-            .on_conflict((name, object))
+            .on_conflict(name)
             .do_update()
-            .set((count.eq(count + 1), duration.eq(duration + self.duration)))
+            .set((
+                count.eq(count + self.count),
+                duration.eq(duration + self.duration),
+            ))
             .execute(conn)?;
         Ok(())
     }
@@ -244,7 +254,6 @@ impl<'a> NewInstantiateClass<'a> {
 #[diesel(table_name = instantiate_function)]
 pub struct InstantiateFunction {
     pub name: String,
-    pub object: String,
     pub duration: i32,
     pub count: i32,
 }
@@ -253,29 +262,30 @@ pub struct InstantiateFunction {
 #[diesel(table_name = instantiate_function)]
 pub struct NewInstantiateFunction<'a> {
     pub name: &'a str,
-    pub object: &'a str,
     pub duration: i32,
     pub count: i32,
 }
 
 impl<'a> NewInstantiateFunction<'a> {
-    pub fn new(name: &'a str, object: &'a str, duration: i32) -> Self {
+    pub fn new(name: &'a str, duration: i32) -> Self {
         NewInstantiateFunction {
             name,
-            object,
             duration,
             count: 1,
         }
     }
-
-    pub fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
-        use instantiate_function::{count, duration, name, object};
+}
+    
+impl<'a> InsertTrait for NewInstantiateFunction<'a> {
+    fn insert(&self, conn: &mut SqliteConnection) -> Result<(), Box<dyn Error + 'static>> {
+        use instantiate_function::{count, duration, name};
         let _ = diesel::insert_into(instantiate_function::table)
             .values(self)
-            .on_conflict((name, object))
+            .on_conflict(name)
             .do_update()
-            .set((count.eq(count + 1), duration.eq(duration + 1)))
+            .set((count.eq(count + self.count), duration.eq(duration + 1)))
             .execute(conn)?;
         Ok(())
     }
 }
+
